@@ -5,52 +5,73 @@ Players will also be stored in objects
 Game flow will also be stored in an object
 */
 function GameController(){
-    let game = GameBoard();
-    let gameBoard = game.getBoard()
-    let player1 = Player("Jal", "X");
-    let player2 = Player("Rando", "O");
-    const inBounds = (r,c) => r >= 0 && r <= 2 && c >= 0 &&  c <= 2;
-    while(true){
-        let row;
-        let col;
-        let isValid
-        do{
-            [row,col] = player1.addSelection();
-            isValid = (inBounds(row, col) && checkValidSpace(gameBoard,row,col));
-            if(!isValid){
-                alert("Invalid Space, pick again.")
-            }
-        }while(!isValid)
-        game.choicePicked([row,col], player1.mark)
-        gameBoard = game.getBoard();
-        if(checkWin(gameBoard, player1.mark, row, col)){
-            console.log(`${player1.name} wins!`)
-            break;
-        }
-
-        if(checkDraw(gameBoard)){
-            console.log("Game over, it's a draw");
-            break;
-        }
-        do{
-            [row,col] = player2.addSelection()
-            isValid = (inBounds(row, col) && checkValidSpace(gameBoard, row, col));
-            if(!isValid){
-                alert("Invalid Space, pick again.")
-            }
-        }while(!isValid)
-        game.choicePicked([row,col], player2.mark)
-        gameBoard = game.getBoard();
-        if (checkWin(gameBoard, player2.mark, row, col)){
-            console.log(`${player2.name} wins!`)
-            break;
-        }
-        if(checkDraw(gameBoard)){
-            console.log("Game over, it's a draw");
-            break;
-        }
+    const game = GameBoard();
+    let gameBoard = game.getBoard();
+    let initialize = document.querySelector(".initialize");
+    let infoDisplay = document.querySelector(".info-display");
+    let resetBtn = document.querySelector(".reset");
+    let player1;
+    let player2;
+    let currentPlayer;
+    let displayText = document.querySelector(".game-info");
+    initialize.addEventListener('click', setNames);
+    resetBtn.addEventListener('click', playAgain);
+    const allDivs = document.querySelectorAll('.cell');
+    allDivs.forEach(cell => {
+        cell.addEventListener('click', displayDOM)
+    })
+    function playAgain(){
+        game.reset();
+        resetBtn.style.display = 'none'
+        infoDisplay.style.display = 'flex';
+        displayText.textContent = ""
+        allDivs.forEach(cell => {
+            cell.textContent = ""
+        })
+        allDivs.forEach(cell => {
+            cell.addEventListener('click', displayDOM)
+        })
     }
-
+    function setNames(){
+        infoDisplay.style.display = 'none';
+        let player1Info = document.getElementById("player1");
+        let player2Info = document.getElementById("player2");
+        player1 = Player(player1Info.value, "X")
+        player2 = Player(player2Info.value, "O")
+        currentPlayer = player1
+        player1Info.value = " "
+        player2Info.value = " "
+    }
+    function displayDOM(e){
+        const cell = e.currentTarget;
+        const [row, col] = cell.id.split('-').map(Number);
+        if(!checkValidSpace(gameBoard, row, col)) {
+            return;
+        }
+        game.choicePicked([row,col], currentPlayer.mark);
+        gameBoard = game.getBoard();
+        cell.textContent = currentPlayer.mark;
+        if(checkWin(gameBoard, currentPlayer.mark, row, col)){
+            displayText.textContent = `${currentPlayer.name} wins!`;
+            allDivs.forEach(cell => {
+                cell.removeEventListener('click', displayDOM)
+            })
+            resetBtn.style.display = 'block'
+            return;
+        }
+        if(checkDraw(gameBoard)){
+            displayText.textContent = "It was a draw! no winners.";
+            return;
+        }
+        if (currentPlayer === player1){
+            currentPlayer = player2;
+        }
+        else{
+            currentPlayer = player1;
+        }
+        displayText.textContent = `${currentPlayer.name} is up!`;
+    }
+    
     function checkWin(gameBoard, choice, row, col){
         let rowSum = 0;
         let colSum = 0;
@@ -116,7 +137,14 @@ function GameBoard(){
         console.log(selected);
     }
     const getBoard = () => selected;
-    return {selected, choicePicked, getBoard};
+    const reset = () => {
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            selected[r][c] = null;
+          }
+        }
+    }
+    return {selected, choicePicked, getBoard, reset};
 }
 function Player(name,mark){
     const addSelection = () => {
@@ -126,3 +154,4 @@ function Player(name,mark){
     }
     return {name, mark, addSelection};
 }
+GameController();
